@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import InputForm from './components/InputForm';
 import FileTree from './components/FileTree';
@@ -7,6 +7,7 @@ import Loading from './components/Loading';
 import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
 import {  FaGithub, FaLinkedin } from 'react-icons/fa';
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+import { useSSRSafeId } from '@react-aria/ssr';
 const printFileExtensions = {
     ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
     ".jsx": true, ".tsx": true, ".rb": true, ".php": true, ".go": true, ".swift": true, ".kt": true, ".kts": true, ".rs": true,
@@ -60,11 +61,29 @@ const App = () => {
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isDownloadEnabled, setIsDownloadEnabled] = useState(false);
+     const [pageTitle, setPageTitle] = useState("GitHub to Markdown Converter");
     const toast = useToast();
     const creatorName = "Pranjalya Tiwari";
     const githubLink = "https://github.com/Pranjalya";
     const portfolioLink = "https://pranjalya.github.io";
     const linkedinLink = "https://www.linkedin.com/in/pranjalya-tiwari/";
+    const defaultMetaDescription = "Convert your GitHub repository into LLM-ingestible markdown. Easily create a .md file for your codebase. Created by Pranjalya Tiwari.";
+    const ssrId = useSSRSafeId();
+
+    useEffect(() => {
+         document.title = pageTitle;
+        // Add meta description tag dynamically
+        const metaDescription = document.querySelector('meta[name="description"]');
+            if (!metaDescription) {
+                const meta = document.createElement('meta');
+                meta.name = 'description';
+                meta.content = defaultMetaDescription;
+                document.head.appendChild(meta);
+        }
+        else {
+            metaDescription.content = defaultMetaDescription;
+        }
+    },[pageTitle, defaultMetaDescription]);
 
 
     const getFilesList = async (owner, reponame, branch, ignoreFolders = []) => {
@@ -191,7 +210,7 @@ const App = () => {
     };
 
     const handleSubmit = async (repoDetails) => {
-        setLoading(true);
+         setLoading(true);
         setIsDownloadEnabled(false)
         setProgress(0)
         try {
@@ -202,6 +221,7 @@ const App = () => {
             const treeString = treeToString(tree);
             setMdContent(markdown);
             setFileTree(treeString);
+             setPageTitle(`Converted ${repoName} from ${owner}`);
             setIsDownloadEnabled(true)
         } catch (error) {
             console.error("Error during conversion:", error);

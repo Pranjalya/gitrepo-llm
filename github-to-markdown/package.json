@@ -2,6 +2,7 @@
   "name": "github-to-markdown",
   "version": "0.1.0",
   "private": true,
+  "author": "Pranjalya Tiwari",
   "dependencies": {
     "@chakra-ui/form-control": "^2.2.0",
     "@chakra-ui/icons": "^2.2.4",
@@ -9,6 +10,7 @@
     "@chakra-ui/toast": "^7.0.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@react-aria/ssr": "^3.9.7",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
     "framer-motion": "^11.15.0",
@@ -23,7 +25,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "bash deploy-ghpage.sh"
   },
   "eslintConfig": {
     "extends": [
