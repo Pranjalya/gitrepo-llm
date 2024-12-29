@@ -100,10 +100,30 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
             placeholder="e.g., package-lock.json, yarn.lock"
           />
         </FormControl>
-          <Button type="submit" colorScheme="blue" isLoading={loading} loadingText="Processing">
+          <Button
+              type="submit"
+              colorScheme="blue"
+              isLoading={loading}
+              loadingText="Processing"
+              sx={{
+                  borderLeftWidth: '1px',
+                  paddingLeft: '1rem', // Added left padding
+                  marginLeft: 0
+              }}
+          >
             Generate Markdown
           </Button>
-         <Button colorScheme="teal" onClick={handleDownload} ml={2} leftIcon={<DownloadIcon />} isDisabled={!isDownloadEnabled}
+         <Button
+           colorScheme="teal"
+             onClick={handleDownload}
+           ml={2}
+             leftIcon={<DownloadIcon />}
+           isDisabled={!isDownloadEnabled}
+             sx={{
+                 borderLeftWidth: '1px',
+                 paddingLeft: '1rem', // Added left padding
+                 marginLeft: 0
+             }}
          >
                 Download .md
             </Button>
