@@ -34,7 +34,7 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
   };
     const handleDownload = () => {
         if(mdContent) {
-            onDownload(mdContent);
+            onDownload(mdContent, owner, repoName, branch);
         }
         else {
             toast({
