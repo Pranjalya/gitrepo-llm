@@ -4,8 +4,9 @@ import InputForm from './components/InputForm';
 import FileTree from './components/FileTree';
 import MarkdownDisplay from './components/MarkdownDisplay';
 import Loading from './components/Loading';
-import { Container, Heading, Box, Text, useToast } from '@chakra-ui/react';
-
+import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
+import {  FaGithub, FaLinkedin } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons'
 const printFileExtensions = {
     ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
     ".jsx": true, ".tsx": true, ".rb": true, ".php": true, ".go": true, ".swift": true, ".kt": true, ".kts": true, ".rs": true,
@@ -60,6 +61,11 @@ const App = () => {
     const [progress, setProgress] = useState(0);
     const [isDownloadEnabled, setIsDownloadEnabled] = useState(false);
     const toast = useToast();
+    const creatorName = "Pranjalya Tiwari";
+    const githubLink = "https://github.com/Pranjalya";
+    const portfolioLink = "https://pranjalya.github.io";
+    const linkedinLink = "https://www.linkedin.com/in/pranjalya-tiwari/";
+
 
     const getFilesList = async (owner, reponame, branch, ignoreFolders = []) => {
         try {
@@ -222,12 +228,33 @@ const App = () => {
         URL.revokeObjectURL(url);
     };
 
-
     return (
        <Container maxW="container.lg" mt={8} >
-            <Heading as="h1" mb={6} textAlign="center">
-                GitHub Repo to Markdown Converter
-            </Heading>
+        <Flex justifyContent="space-between" alignItems="center" mb={6}>
+          <Heading as="h1" textAlign="center">
+             GitHub Repo to Markdown Converter
+          </Heading>
+          <HStack spacing={4}>
+             <Text fontSize="sm" fontWeight="bold">
+                Created by <Text display="inline" fontWeight="bold" as="span">{creatorName}</Text>
+             </Text>
+             <Tooltip label="Github Profile">
+               <Link href={githubLink} isExternal>
+                   <FaGithub size={20} />
+               </Link>
+             </Tooltip>
+               <Tooltip label="Portfolio">
+               <Link href={portfolioLink} isExternal>
+                   <ExternalLinkIcon size={20} />
+                </Link>
+               </Tooltip>
+            <Tooltip label="LinkedIn Profile">
+              <Link href={linkedinLink} isExternal>
+                  <FaLinkedin size={20} />
+                </Link>
+             </Tooltip>
+        </HStack>
+        </Flex>
             <Box display="grid" gridTemplateColumns="1fr 1fr" gap={6}>
                 <InputForm onSubmit={handleSubmit} onDownload={handleDownload} loading={loading} mdContent={mdContent} isDownloadEnabled={isDownloadEnabled}/>
                 <Box>
