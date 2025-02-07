@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Input,
   Button,
@@ -7,7 +7,8 @@ import {
   Text,
   useToast,
   InputGroup,
-  InputLeftElement
+  InputLeftElement,
+  Select
 } from '@chakra-ui/react';
 import { FormControl, FormLabel } from '@chakra-ui/form-control'
 import { DownloadIcon, LinkIcon } from '@chakra-ui/icons';
@@ -15,7 +16,8 @@ import { DownloadIcon, LinkIcon } from '@chakra-ui/icons';
 const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled }) => {
   const [owner, setOwner] = useState('');
   const [repoName, setRepoName] = useState('');
-  const [branch, setBranch] = useState('main');
+  const [branch, setBranch] = useState('');
+  const [availableBranches, setAvailableBranches] = useState([]); // New state for branches
   const [ignoreFolders, setIgnoreFolders] = useState('');
   const [ignoreFiles, setIgnoreFiles] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
@@ -77,6 +79,38 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
       })
     }
   }
+
+  useEffect(() => {
+    // Fetch branches when owner and repoName are available
+    if (owner && repoName) {
+      const fetchBranches = async () => {
+        try {
+          const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}/branches`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          setAvailableBranches(data.map(branch => branch.name));
+
+          // Optionally set the default branch if 'branch' state is empty
+          if (!branch && data.length > 0) {
+            // Assuming the first branch in the API response is the default branch
+            setBranch(data[0].name);
+          }
+        } catch (error) {
+          console.error("Could not fetch branches:", error);
+          toast({
+            title: 'Could not fetch branches',
+            description: 'Failed to retrieve branch list from GitHub.',
+            status: 'error',
+          });
+        }
+      };
+
+      fetchBranches();
+    }
+  }, [owner, repoName, branch, toast]); // Add branch to the dependency array
+
   return (
     <Box p={4} boxShadow="md" rounded="md" bg="white">
       <Stack spacing={4}>
@@ -122,14 +156,19 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
               required
             />
           </FormControl>
-          <FormControl>
+          <FormControl id="branch">
             <FormLabel>Branch</FormLabel>
-            <Input
-              type="text"
+            <Select
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
-              placeholder="e.g., main or master"
-            />
+              placeholder="Select branch"
+            >
+              {availableBranches.map((branchName) => (
+                <option key={branchName} value={branchName}>
+                  {branchName}
+                </option>
+              ))}
+            </Select>
           </FormControl>
           <FormControl>
             <FormLabel>Ignore Folders (comma separated)</FormLabel>
