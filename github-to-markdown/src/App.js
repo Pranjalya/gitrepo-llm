@@ -7,7 +7,7 @@ import Loading from './components/Loading';
 import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
 import {  FaGithub, FaLinkedin } from 'react-icons/fa';
 import { ExternalLinkIcon } from '@chakra-ui/icons'
-import { useSSRSafeId } from '@react-aria/ssr';
+
 const printFileExtensions = {
     ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
     ".jsx": true, ".tsx": true, ".rb": true, ".php": true, ".go": true, ".swift": true, ".kt": true, ".kts": true, ".rs": true,
@@ -68,7 +68,6 @@ const App = () => {
     const portfolioLink = "https://pranjalya.github.io";
     const linkedinLink = "https://www.linkedin.com/in/pranjalya-tiwari/";
     const defaultMetaDescription = "Convert your GitHub repository into LLM-ingestible markdown. Easily create a .md file for your codebase. Created by Pranjalya Tiwari.";
-    const ssrId = useSSRSafeId();
 
     useEffect(() => {
          document.title = pageTitle;
