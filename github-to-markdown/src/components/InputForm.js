@@ -8,12 +8,13 @@ import {
   useToast,
   InputGroup,
   InputLeftElement,
-  Select
+  Select,
 } from '@chakra-ui/react';
 import { FormControl, FormLabel } from '@chakra-ui/form-control'
 import { DownloadIcon, LinkIcon } from '@chakra-ui/icons';
+import axios from 'axios';
 
-const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled }) => {
+const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled, githubPAT }) => {
   const [owner, setOwner] = useState('');
   const [repoName, setRepoName] = useState('');
   const [branch, setBranch] = useState('');
@@ -63,7 +64,7 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
       })
       return;
     }
-    onSubmit({ owner, repoName, branch, ignoreFolders: parsedIgnoreFolders, ignoreFiles: parsedIgnoreFiles });
+    onSubmit({ owner, repoName, branch, ignoreFolders: parsedIgnoreFolders, ignoreFiles: parsedIgnoreFiles, githubPAT });
   };
   const handleDownload = () => {
     if(mdContent) {
@@ -85,17 +86,14 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
     if (owner && repoName) {
       const fetchBranches = async () => {
         try {
-          const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}/branches`);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const data = await response.json();
-          setAvailableBranches(data.map(branch => branch.name));
+          const headers = githubPAT ? { Authorization: `token ${githubPAT}` } : {};
+          const response = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/branches`, { headers });
+          setAvailableBranches(response.data.map(branch => branch.name));
 
           // Optionally set the default branch if 'branch' state is empty
-          if (!branch && data.length > 0) {
+          if (!branch && response.data.length > 0) {
             // Assuming the first branch in the API response is the default branch
-            setBranch(data[0].name);
+            setBranch(response.data[0].name);
           }
         } catch (error) {
           console.error("Could not fetch branches:", error);
@@ -109,7 +107,7 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
 
       fetchBranches();
     }
-  }, [owner, repoName, branch, toast]); // Add branch to the dependency array
+  }, [owner, repoName, branch, githubPAT, toast]); // Add branch to the dependency array
 
   return (
     <Box p={4} boxShadow="md" rounded="md" bg="white">

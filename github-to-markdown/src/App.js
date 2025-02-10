@@ -4,9 +4,10 @@ import InputForm from './components/InputForm';
 import FileTree from './components/FileTree';
 import MarkdownDisplay from './components/MarkdownDisplay';
 import Loading from './components/Loading';
-import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
+import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip, Input, InputGroup, InputRightElement, IconButton } from '@chakra-ui/react';
 import {  FaGithub, FaLinkedin } from 'react-icons/fa';
-import { ExternalLinkIcon } from '@chakra-ui/icons'
+import { ExternalLinkIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
+import { FormControl, FormLabel } from '@chakra-ui/form-control'
 
 const printFileExtensions = {
     ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
@@ -68,6 +69,8 @@ const App = () => {
     const portfolioLink = "https://pranjalya.github.io";
     const linkedinLink = "https://www.linkedin.com/in/pranjalya-tiwari/";
     const defaultMetaDescription = "Convert your GitHub repository into LLM-ingestible markdown. Easily create a .md file for your codebase. Created by Pranjalya Tiwari.";
+    const [githubPAT, setGithubPAT] = useState(''); // new state for github pat
+    const [showPAT, setShowPAT] = useState(false);
 
     useEffect(() => {
          document.title = pageTitle;
@@ -85,10 +88,11 @@ const App = () => {
     },[pageTitle, defaultMetaDescription]);
 
 
-    const getFilesList = async (owner, reponame, branch, ignoreFolders = []) => {
+    const getFilesList = async (owner, reponame, branch, ignoreFolders = [], githubPAT = null) => {
         try {
+            const headers = githubPAT ? { Authorization: `token ${githubPAT}` } : {};
             const response = await axios.get(
-                `https://api.github.com/repos/${owner}/${reponame}/git/trees/${branch}?recursive=true`
+                `https://api.github.com/repos/${owner}/${reponame}/git/trees/${branch}?recursive=true`, { headers }
             );
 
             if (response.status === 200) {
@@ -124,9 +128,10 @@ const App = () => {
     };
 
 
-    const getFileContent = async (owner, reponame, branch, filepath) => {
+    const getFileContent = async (owner, reponame, branch, filepath, githubPAT = null) => {
       try {
-            const url = `https://raw.githubusercontent.com/${owner}/${reponame}/refs/heads/${branch}/${filepath}`;
+            let url = `https://raw.githubusercontent.com/${owner}/${reponame}/${branch}/${filepath}`;
+            url = githubPAT ? `${url}?token=${githubPAT}` : url;
             const response = await axios.get(url);
 
             if (response.status === 200) {
@@ -179,7 +184,7 @@ const App = () => {
             return null
         }
   };
-    const prepareMarkdown = async (owner, reponame, branch, filelists, ignoreFiles) => {
+    const prepareMarkdown = async (owner, reponame, branch, filelists, ignoreFiles, githubPAT = null) => {
         let markdownContent = `** ${reponame} **\n\n`;
 
         const tree = buildTreeFromPaths(filelists, reponame);
@@ -196,7 +201,7 @@ const App = () => {
 
        let processedCount = 0;
         for (const fileitem of filteredFiles) {
-           const fileContent = await getFileContent(owner, reponame, branch, fileitem)
+           const fileContent = await getFileContent(owner, reponame, branch, fileitem, githubPAT)
             if (fileContent) {
                 markdownContent += `\n\n## ${fileitem}\n`;
                 markdownContent += fileContent;
@@ -209,13 +214,13 @@ const App = () => {
     };
 
     const handleSubmit = async (repoDetails) => {
-         setLoading(true);
+        setLoading(true);
         setIsDownloadEnabled(false)
         setProgress(0)
         try {
-            const { owner, repoName, branch, ignoreFolders, ignoreFiles } = repoDetails;
-            const filesList = await getFilesList(owner, repoName, branch, ignoreFolders);
-            const markdown = await prepareMarkdown(owner, repoName, branch, filesList, ignoreFiles);
+            const { owner, repoName, branch, ignoreFolders, ignoreFiles, githubPAT } = repoDetails;
+            const filesList = await getFilesList(owner, repoName, branch, ignoreFolders, githubPAT);
+            const markdown = await prepareMarkdown(owner, repoName, branch, filesList, ignoreFiles, githubPAT);
             const tree = buildTreeFromPaths(filesList, repoName);
             const treeString = treeToString(tree);
             setMdContent(markdown);
@@ -247,6 +252,8 @@ const App = () => {
         URL.revokeObjectURL(url);
     };
 
+    const handleClickShowPAT = () => setShowPAT(!showPAT);
+
     return (
        <Container maxW="container.lg" mt={8} >
         <Flex justifyContent="space-between" alignItems="center" mb={6}>
@@ -275,10 +282,41 @@ const App = () => {
         </HStack>
         </Flex>
             <Box display="grid" gridTemplateColumns="1fr 1fr" gap={6}>
-                <InputForm onSubmit={handleSubmit} onDownload={handleDownload} loading={loading} mdContent={mdContent} isDownloadEnabled={isDownloadEnabled}/>
+                <InputForm 
+                  onSubmit={handleSubmit} 
+                  onDownload={handleDownload} 
+                  loading={loading} 
+                  mdContent={mdContent} 
+                  isDownloadEnabled={isDownloadEnabled}
+                  githubPAT={githubPAT}
+                />
                 <Box>
                     {loading && <Loading />}
-                    {!loading && <FileTree treeString={fileTree} />}
+                    <FileTree treeString={fileTree} />
+                    <Box mt={4}>
+                      <FormControl>
+                        <FormLabel>GitHub Personal Access Token (optional)</FormLabel>
+                        <InputGroup size="md">
+                          <Input
+                            pr="4.5rem"
+                            type={showPAT ? "text" : "password"}
+                            placeholder="Enter PAT"
+                            value={githubPAT}
+                            onChange={(e) => setGithubPAT(e.target.value)}
+                          />
+                          <InputRightElement width="4.5rem">
+                            <IconButton
+                              h="1.75rem"
+                              size="sm"
+                              onClick={handleClickShowPAT}
+                              icon={showPAT ? <ViewOffIcon /> : <ViewIcon />}
+                            >
+                              {showPAT ? 'Hide' : 'Show'}
+                            </IconButton>
+                          </InputRightElement>
+                        </InputGroup>
+                      </FormControl>
+                    </Box>
                 </Box>
             </Box>
               {loading && (
