@@ -7,6 +7,7 @@ import Loading from './components/Loading';
 import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
 import {  FaGithub, FaLinkedin } from 'react-icons/fa';
 import { ExternalLinkIcon } from '@chakra-ui/icons'
+import { minimatch } from 'minimatch';
 
 const printFileExtensions = {
     ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
@@ -85,7 +86,7 @@ const App = () => {
     },[pageTitle, defaultMetaDescription]);
 
 
-    const getFilesList = async (owner, reponame, branch, ignoreFolders = []) => {
+    const getFilesList = async (owner, reponame, branch, ignoreFolders = [], ignoreFiles = []) => {
         try {
             const response = await axios.get(
                 `https://api.github.com/repos/${owner}/${reponame}/git/trees/${branch}?recursive=true`
@@ -94,11 +95,31 @@ const App = () => {
             if (response.status === 200) {
                 const data = response.data;
                 const files = data.tree;
-                const patterns = ignoreFolders.map(ignoreFolder => new RegExp(`^${ignoreFolder}(?:/.*)?$`));
 
-                return files
-                    .filter(f => f.type === 'blob' && !patterns.some(pattern => pattern.test(f.path)))
-                    .map(f => f.path);
+                // Filter files using minimatch
+                const filteredFiles = files.filter(file => {
+                    if (file.type !== 'blob') {
+                        return false; // Exclude non-blob entries
+                    }
+
+                    // Check against ignoreFolders
+                    for (const pattern of ignoreFolders) {
+                        if (minimatch(file.path, pattern)) {
+                            return false; // Exclude if any folder pattern matches
+                        }
+                    }
+
+                    // Check against ignoreFiles
+                    for (const pattern of ignoreFiles) {
+                        if (minimatch(file.path, pattern)) {
+                            return false; // Exclude if any file pattern matches
+                        }
+                    }
+
+                    return true; // Include if no patterns matched
+                });
+
+                return filteredFiles.map(f => f.path);
             } else {
                 console.error(`Failed to get file list: Status code ${response.status}`);
                 toast({
@@ -191,7 +212,7 @@ const App = () => {
 
       const filteredFiles = filelists.filter(fileitem => {
             const extension = fileitem.split('.').pop();
-            return (fileitem && printFileExtensions[`.${extension}`] && !ignoreFiles.includes(fileitem));
+            return (fileitem && printFileExtensions[`.${extension}`] && !ignoreFiles.some(pattern => minimatch(fileitem, pattern)));
         });
 
        let processedCount = 0;
@@ -214,7 +235,7 @@ const App = () => {
         setProgress(0)
         try {
             const { owner, repoName, branch, ignoreFolders, ignoreFiles } = repoDetails;
-            const filesList = await getFilesList(owner, repoName, branch, ignoreFolders);
+            const filesList = await getFilesList(owner, repoName, branch, ignoreFolders, ignoreFiles);
             const markdown = await prepareMarkdown(owner, repoName, branch, filesList, ignoreFiles);
             const tree = buildTreeFromPaths(filesList, repoName);
             const treeString = treeToString(tree);

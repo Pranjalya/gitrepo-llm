@@ -8,7 +8,8 @@ import {
   useToast,
   InputGroup,
   InputLeftElement,
-  Select
+  Select,
+  Textarea
 } from '@chakra-ui/react';
 import { FormControl, FormLabel } from '@chakra-ui/form-control'
 import { DownloadIcon, LinkIcon } from '@chakra-ui/icons';
@@ -52,8 +53,9 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const parsedIgnoreFolders = ignoreFolders.split(',').map(s => s.trim()).filter(s => s !== '');
-    const parsedIgnoreFiles = ignoreFiles.split(',').map(s => s.trim()).filter(s => s !== '');
+    const parsedIgnoreFolders = ignoreFolders.split('\n').map(s => s.trim()).filter(s => s !== '');
+    const parsedIgnoreFiles = ignoreFiles.split('\n').map(s => s.trim()).filter(s => s !== '');
+
     if (!owner || !repoName) {
       toast({
         title: 'Please enter owner and repository name',
@@ -171,21 +173,21 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
             </Select>
           </FormControl>
           <FormControl>
-            <FormLabel>Ignore Folders (comma separated)</FormLabel>
-            <Input
-              type="text"
+            <FormLabel>Ignore Folders (one pattern per line)</FormLabel>
+            <Textarea
               value={ignoreFolders}
               onChange={(e) => setIgnoreFolders(e.target.value)}
-              placeholder="e.g., .git, node_modules"
+              placeholder="e.g., .git
+              node_modules/"
             />
           </FormControl>
           <FormControl>
-            <FormLabel>Ignore Files (comma separated)</FormLabel>
-            <Input
-              type="text"
+            <FormLabel>Ignore Files (one pattern per line)</FormLabel>
+            <Textarea
               value={ignoreFiles}
               onChange={(e) => setIgnoreFiles(e.target.value)}
-              placeholder="e.g., package-lock.json, yarn.lock"
+              placeholder="e.g., package-lock.json
+              *.log"
             />
           </FormControl>
           <Button
