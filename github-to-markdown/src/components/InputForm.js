@@ -25,10 +25,11 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
 
   const parseRepoUrl = (url) => {
     try {
+      url = url.replace("https://", "")
       const urlParts = url.split('/');
-      const owner = urlParts[3];
-      const repoName = urlParts[4].replace('.git', '');
-      const branch = urlParts.length > 7 ? urlParts[6] : 'main';
+      const owner = urlParts[1];
+      const repoName =  urlParts[2].endsWith('.git') ? urlParts[2].replace('.git', '') : urlParts[2];
+      const branch = urlParts.length > 5 ? urlParts[4] : 'main';
 
       setOwner(owner);
       setRepoName(repoName);
@@ -161,7 +162,7 @@ const InputForm = ({ onSubmit, onDownload, loading, mdContent, isDownloadEnabled
             <Select
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
-              placeholder="Select branch"
+              placeholder="main"
             >
               {availableBranches.map((branchName) => (
                 <option key={branchName} value={branchName}>
