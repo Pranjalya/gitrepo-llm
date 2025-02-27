@@ -1,0 +1,16 @@
+{
+  "short_name": "GitRepo-LLM",
+  "name": "Convert your GitHub repository into LLM-ingestible markdown. Easily create a .md file for your codebase. Created by Pranjalya Tiwari.",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "purpose": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/gitrepo-llm/static/js/main.b3466fcc.js",
+    "index.html": "/gitrepo-llm/index.html",
+    "main.b3466fcc.js.map": "/gitrepo-llm/static/js/main.b3466fcc.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.b3466fcc.js"
+  ]
+}
