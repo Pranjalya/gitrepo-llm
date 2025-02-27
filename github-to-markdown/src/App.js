@@ -191,7 +191,7 @@ const App = () => {
 
       const filteredFiles = filelists.filter(fileitem => {
             const extension = fileitem.split('.').pop();
-            return (fileitem && printFileExtensions[`.${extension}`] && !ignoreFiles.includes(fileitem));
+            return (fileitem && !ignoreFiles.includes(fileitem));
         });
 
        let processedCount = 0;
