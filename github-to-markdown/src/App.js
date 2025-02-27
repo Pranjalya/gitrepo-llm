@@ -5,20 +5,8 @@ import FileTree from './components/FileTree';
 import MarkdownDisplay from './components/MarkdownDisplay';
 import Loading from './components/Loading';
 import { Container, Heading, Box, useToast, Link, Flex, Text, HStack, Tooltip } from '@chakra-ui/react';
-import {  FaGithub, FaLinkedin } from 'react-icons/fa';
-import { ExternalLinkIcon } from '@chakra-ui/icons'
-
-const printFileExtensions = {
-    ".c": true, ".cpp": true, ".cc": true, ".cxx": true, ".cs": true, ".java": true, ".py": true, ".json": true, ".js": true, ".ts": true,
-    ".jsx": true, ".tsx": true, ".rb": true, ".php": true, ".go": true, ".swift": true, ".kt": true, ".kts": true, ".rs": true,
-    ".dart": true, ".scala": true, ".m": true, ".pl": true, ".vb": true, ".lua": true, ".r": true, ".awk": true, ".sh": true,
-    ".bat": true, ".ps1": true, ".vue": true, ".html": true, ".htm": true, ".css": true, ".scss": true, ".sass": true,
-    ".xml": true, ".yaml": true, ".yml": true, ".ini": true, ".env": true, ".toml": true, ".sql": true, ".psql": true,
-    ".hs": true, ".erl": true, ".hrl": true, ".ml": true, ".asm": true, ".s": true, ".md": true, ".tex": true, ".makefile": true,
-    ".mk": true, ".gradle": true, ".cmake": true, ".dockerfile": true, ".ipynb": true, ".coffee": true, ".h": true,
-    ".hpp": true, ".pb": true, ".proto": true, ".lock": true, ".gohtml": true, ".mod": true, ".sum": true, ".gradle.kts": true
-};
-
+import { FaGithub, FaLinkedin } from 'react-icons/fa';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
 
 const TreeNode = (name) => ({
     name,
@@ -30,6 +18,7 @@ const TreeNode = (name) => ({
         return this.children[child_name];
     }
 });
+
 const buildTreeFromPaths = (paths, rootName = "root") => {
     const root = TreeNode(rootName);
 
@@ -55,13 +44,14 @@ const treeToString = (node, prefix = "") => {
     }
     return result;
 };
+
 const App = () => {
     const [mdContent, setMdContent] = useState('');
     const [fileTree, setFileTree] = useState('');
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isDownloadEnabled, setIsDownloadEnabled] = useState(false);
-     const [pageTitle, setPageTitle] = useState("GitHub to Markdown Converter");
+    const [pageTitle, setPageTitle] = useState("GitHub to Markdown Converter");
     const toast = useToast();
     const creatorName = "Pranjalya Tiwari";
     const githubLink = "https://github.com/Pranjalya";
@@ -70,20 +60,17 @@ const App = () => {
     const defaultMetaDescription = "Convert your GitHub repository into LLM-ingestible markdown. Easily create a .md file for your codebase. Created by Pranjalya Tiwari.";
 
     useEffect(() => {
-         document.title = pageTitle;
-        // Add meta description tag dynamically
+        document.title = pageTitle;
         const metaDescription = document.querySelector('meta[name="description"]');
-            if (!metaDescription) {
-                const meta = document.createElement('meta');
-                meta.name = 'description';
-                meta.content = defaultMetaDescription;
-                document.head.appendChild(meta);
-        }
-        else {
+        if (!metaDescription) {
+            const meta = document.createElement('meta');
+            meta.name = 'description';
+            meta.content = defaultMetaDescription;
+            document.head.appendChild(meta);
+        } else {
             metaDescription.content = defaultMetaDescription;
         }
-    },[pageTitle, defaultMetaDescription]);
-
+    }, [pageTitle, defaultMetaDescription]);
 
     const getFilesList = async (owner, reponame, branch, ignoreFolders = []) => {
         try {
@@ -122,37 +109,72 @@ const App = () => {
             return [];
         }
     };
+    
+    const isTextFile = async (url) => {
+        try {
+            const headResponse = await fetch(url, { method: 'HEAD' });
+            if (!headResponse.ok) {
+                return false;
+            }
+            const contentType = headResponse.headers.get("Content-Type");
 
+            if (contentType && (contentType.startsWith("text/") || [
+                "application/json", "application/javascript", "application/xml"
+            ].includes(contentType))) {
+                return true;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                return false;
+            }
+            const reader = response.body.getReader();
+            const { value } = await reader.read();
+
+            if (!value) return false;
+
+            return [...value].every(byte => byte >= 32 || [9, 10, 13].includes(byte));
+
+        } catch (error) {
+            console.error("Error checking file:", error);
+            return false;
+        }
+    };
 
     const getFileContent = async (owner, reponame, branch, filepath) => {
-      try {
+        try {
             const url = `https://raw.githubusercontent.com/${owner}/${reponame}/refs/heads/${branch}/${filepath}`;
+            const isText = await isTextFile(url);
+
+            if (!isText) {
+                console.log(`Skipping non-text file: ${filepath}`);
+                return null;
+            }
+
             const response = await axios.get(url);
 
             if (response.status === 200) {
-               let content = response.data;
+                let content = response.data;
                 if (content == null) {
                     return "```\nContent was Null\n```\n";
                 }
-               // Check if the file is a JSON file
-                if (filepath.endsWith(".json")) {
-                  try {
-                      // Check if content is already an object, if not then try parsing
-                        if (typeof content !== 'object' ) {
-                           content = JSON.parse(content);
+
+                // Check if the file is a JSON file and try to format it
+                if (filepath.endsWith(".json") || filepath.endsWith(".js.map")) {
+                    try {
+                        if (typeof content !== 'object') {
+                            content = JSON.parse(content);
                         }
-                        // Stringify JSON content with indentation for better readability
                         content = JSON.stringify(content, null, 2);
                     } catch (jsonError) {
                         console.error(`Error parsing JSON for ${filepath}:`, jsonError);
-                      toast({
-                        title: 'Error parsing JSON',
-                        description: `Error parsing JSON for ${filepath}:`,
-                        status: 'error',
-                        duration: 5000,
-                        isClosable: true,
-                      })
-                       // If parsing fails, keep original content.
+                        toast({
+                            title: 'Error parsing JSON',
+                            description: `Error parsing JSON for ${filepath}:`,
+                            status: 'error',
+                            duration: 5000,
+                            isClosable: true,
+                        });
                     }
                 }
                 return "```\n" + content + "\n```\n";
@@ -165,20 +187,21 @@ const App = () => {
                     duration: 5000,
                     isClosable: true,
                 });
-                return null
+                return null;
             }
         } catch (error) {
             console.error(`An error occurred for file: ${filepath}:`, error);
-              toast({
-                  title: 'Error fetching file content from GitHub',
-                  description: error.message,
+            toast({
+                title: 'Error fetching file content from GitHub',
+                description: error.message,
                 status: 'error',
                 duration: 5000,
                 isClosable: true,
-              });
-            return null
+            });
+            return null;
         }
-  };
+    };
+
     const prepareMarkdown = async (owner, reponame, branch, filelists, ignoreFiles) => {
         let markdownContent = `** ${reponame} **\n\n`;
 
@@ -189,29 +212,26 @@ const App = () => {
 
         markdownContent += "\n**File Contents**\n";
 
-      const filteredFiles = filelists.filter(fileitem => {
-            const extension = fileitem.split('.').pop();
-            return (fileitem && !ignoreFiles.includes(fileitem));
-        });
+        // Filter out ignored files here, before fetching content
+        const filteredFiles = filelists.filter(fileitem => fileitem && !ignoreFiles.includes(fileitem));
 
-       let processedCount = 0;
+        let processedCount = 0;
         for (const fileitem of filteredFiles) {
-           const fileContent = await getFileContent(owner, reponame, branch, fileitem)
+            const fileContent = await getFileContent(owner, reponame, branch, fileitem);
             if (fileContent) {
                 markdownContent += `\n\n## ${fileitem}\n`;
                 markdownContent += fileContent;
             }
             processedCount++;
             setProgress(Math.round((processedCount / filteredFiles.length) * 100));
-
         }
-        return markdownContent
+        return markdownContent;
     };
 
     const handleSubmit = async (repoDetails) => {
-         setLoading(true);
-        setIsDownloadEnabled(false)
-        setProgress(0)
+        setLoading(true);
+        setIsDownloadEnabled(false);
+        setProgress(0);
         try {
             const { owner, repoName, branch, ignoreFolders, ignoreFiles } = repoDetails;
             const filesList = await getFilesList(owner, repoName, branch, ignoreFolders);
@@ -220,8 +240,8 @@ const App = () => {
             const treeString = treeToString(tree);
             setMdContent(markdown);
             setFileTree(treeString);
-             setPageTitle(`Converted ${repoName} from ${owner}`);
-            setIsDownloadEnabled(true)
+            setPageTitle(`Converted ${repoName} from ${owner}`);
+            setIsDownloadEnabled(true);
         } catch (error) {
             console.error("Error during conversion:", error);
             toast({
@@ -230,11 +250,12 @@ const App = () => {
                 status: 'error',
                 duration: 5000,
                 isClosable: true,
-            })
+            });
         } finally {
             setLoading(false);
         }
     };
+
     const handleDownload = (mdContent, owner, repoName, branch) => {
         const blob = new Blob([mdContent], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
@@ -248,44 +269,44 @@ const App = () => {
     };
 
     return (
-       <Container maxW="container.lg" mt={8} >
-        <Flex justifyContent="space-between" alignItems="center" mb={6}>
-          <Heading as="h1" textAlign="center">
-             GitHub Repo to Markdown Converter
-          </Heading>
-          <HStack spacing={4}>
-             <Text fontSize="sm" fontWeight="bold">
-                Created by <Text display="inline" fontWeight="bold" as="span">{creatorName}</Text>
-             </Text>
-             <Tooltip label="Github Profile">
-               <Link href={githubLink} isExternal>
-                   <FaGithub size={20} />
-               </Link>
-             </Tooltip>
-               <Tooltip label="Portfolio">
-               <Link href={portfolioLink} isExternal>
-                   <ExternalLinkIcon size={20} />
-                </Link>
-               </Tooltip>
-            <Tooltip label="LinkedIn Profile">
-              <Link href={linkedinLink} isExternal>
-                  <FaLinkedin size={20} />
-                </Link>
-             </Tooltip>
-        </HStack>
-        </Flex>
+        <Container maxW="container.lg" mt={8}>
+            <Flex justifyContent="space-between" alignItems="center" mb={6}>
+                <Heading as="h1" textAlign="center">
+                    GitHub Repo to Markdown Converter
+                </Heading>
+                <HStack spacing={4}>
+                    <Text fontSize="sm" fontWeight="bold">
+                        Created by <Text display="inline" fontWeight="bold" as="span">{creatorName}</Text>
+                    </Text>
+                    <Tooltip label="Github Profile">
+                        <Link href={githubLink} isExternal>
+                            <FaGithub size={20} />
+                        </Link>
+                    </Tooltip>
+                    <Tooltip label="Portfolio">
+                        <Link href={portfolioLink} isExternal>
+                            <ExternalLinkIcon size={20} />
+                        </Link>
+                    </Tooltip>
+                    <Tooltip label="LinkedIn Profile">
+                        <Link href={linkedinLink} isExternal>
+                            <FaLinkedin size={20} />
+                        </Link>
+                    </Tooltip>
+                </HStack>
+            </Flex>
             <Box display="grid" gridTemplateColumns="1fr 1fr" gap={6}>
-                <InputForm onSubmit={handleSubmit} onDownload={handleDownload} loading={loading} mdContent={mdContent} isDownloadEnabled={isDownloadEnabled}/>
+                <InputForm onSubmit={handleSubmit} onDownload={handleDownload} loading={loading} mdContent={mdContent} isDownloadEnabled={isDownloadEnabled} />
                 <Box>
                     {loading && <Loading />}
                     {!loading && <FileTree treeString={fileTree} />}
                 </Box>
             </Box>
-              {loading && (
-                  <Box  mt={6} alignItems="center">
-                     <Text mb={2} textAlign="center">Processing Files: {progress}%</Text>
-                     </Box>
-                )}
+            {loading && (
+                <Box mt={6} alignItems="center">
+                    <Text mb={2} textAlign="center">Processing Files: {progress}%</Text>
+                </Box>
+            )}
             <Box mt={6}>
                 {loading && <Loading />}
                 {!loading && <MarkdownDisplay mdContent={mdContent} />}
